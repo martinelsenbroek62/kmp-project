@@ -1,0 +1,227 @@
+package com.nseindia.common.drools.service;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
+import com.nseindia.mc.controller.dto.LineValidationResult;
+import com.nseindia.mc.controller.dto.ErrorCode;
+import com.nseindia.mc.controller.dto.DroolsEnv;
+import com.nseindia.mc.util.ValidationUtils;
+
+global DroolsEnv env;
+
+dialect  "mvel"
+
+rule "Collateral Script Check Length"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() != 9)
+    then
+        $line.addError("FS015");
+end
+
+rule "Collateral Script Check Record Type"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() > 0 && fields.get(0) != "50")
+    then
+        $line.addError("IFD024");
+end
+
+rule "Collateral Script Check PAN Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() > 2 && Pattern.matches("[A-Z]{3}[ABCFGHLJPTF]{1}[A-Z]{1}[0-9]{4}[A-Z]{1}", fields.get(2)) != true)
+    then
+        $line.addError("IFD025");
+end
+
+rule "Collateral Script Check Category"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() > 7 && ValidationUtils.notInList(fields.get(7), Arrays.asList("Y", "N")))
+    then
+        $line.addError("IFD027");
+end
+
+rule "Collateral Script Check Stock Exchange"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() > 8 && ValidationUtils.notInList(fields.get(8), Arrays.asList("NSE", "BSE")))
+    then
+        $line.addError("IFD028");
+end
+
+rule "Collateral Script Check Record Type is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(0)))
+    then
+        $line.addError("IFD001", "field", "Record Type");
+end
+
+rule "Collateral Script Check Record Type is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNotValidNumber(fields.get(0)))
+    then
+        $line.addError("IFD002", "field", "Record Type");
+end
+
+rule "Collateral Script Check Client Name is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(1)))
+    then
+        $line.addError("IFD001", "field", "Client Name");
+end
+
+rule "Collateral Script Check Client Name field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isOutsideLimits(fields.get(1), 240))
+    then
+        $line.addError("IFD004", "field", "Client Name", "specifiedValue", "Char(240)");
+end
+
+rule "Collateral Script Check PAN is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(2)))
+    then
+        $line.addError("IFD001", "field", "PAN");
+end
+
+rule "Collateral Script Check PAN field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isOutsideLimits(fields.get(2), 240))
+    then
+        $line.addError("IFD004", "field", "PAN", "specifiedValue", "Char(240)");
+end
+
+rule "Collateral Script Check PAN field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.containsNonAlphabets(fields.get(2)))
+    then
+        $line.addError("IFD003", "field", "PAN");
+end
+
+rule "Collateral Script Check Symbol is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(3)))
+    then
+        $line.addError("IFD001", "field", "Symbol");
+end
+
+rule "Collateral Script Check Symbol field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isOutsideLimits(fields.get(3), 10))
+    then
+        $line.addError("IFD004", "field", "Symbol", "specifiedValue", "Char(10)");
+end
+
+rule "Collateral Script Check Symbol code is valid"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isSetNotContains(env.getValidSymbolCodes(), fields.get(3)))
+    then
+        $line.addError("IFD026", "field", "Symbol");
+end
+
+rule "Collateral Script Check Series is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(4)))
+    then
+        $line.addError("IFD001", "field", "Series");
+end
+
+rule "Collateral Script Check Series field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isOutsideLimits(fields.get(4), 2))
+    then
+        $line.addError("IFD004", "field", "Series", "specifiedValue", "Char(2)");
+end
+
+rule "Collateral Script Check Series field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.containsNonAlphabets(fields.get(4)))
+    then
+        $line.addError("IFD003", "field", "Series");
+end
+
+rule "Collateral Script Check Quantity end day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(5)))
+    then
+        $line.addError("IFD001", "field", "Quantity end day");
+end
+
+rule "Collateral Script Check Quantity end day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNotValidNumber(fields.get(5)))
+    then
+        $line.addError("IFD002", "field", "Quantity end day");
+end
+
+rule "Collateral Script Check Quantity end day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNotQuantity(fields.get(5)))
+    then
+        $line.addError("IFD004", "field", "Quantity end day", "specifiedValue", "Number(9)");
+end
+
+rule "Collateral Script Check Amount end day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(6)))
+    then
+        $line.addError("IFD001", "field", "Amount end day");
+end
+
+rule "Collateral Script Check Amount end day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNotValidNumber(fields.get(6)))
+    then
+        $line.addError("IFD002", "field", "Amount end day");
+end
+
+rule "Collateral Script Check Amount end day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNotAmount(fields.get(6)))
+    then
+        $line.addError("IFD004", "field", "Amount end day", "specifiedValue", "Number(15,2)");
+end
+
+rule "Collateral Script Check Category of Holding is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(7)))
+    then
+        $line.addError("IFD001", "field", "Category of Holding");
+end
+
+rule "Collateral Script Check Category of Holding field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isOutsideLimits(fields.get(7), 2))
+    then
+        $line.addError("IFD004", "field", "Category of Holding", "specifiedValue", "Char(2)");
+end
+
+rule "Collateral Script Check Category of Holding field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.containsNonAlphabets(fields.get(7)))
+    then
+        $line.addError("IFD003", "field", "Category of Holding");
+end
+
+rule "Collateral Script Check Stock Exchange is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isNullOrEmpty(fields.get(8)))
+    then
+        $line.addError("IFD001", "field", "Stock Exchange");
+end
+
+rule "Collateral Script Check Stock Exchange field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.isOutsideLimits(fields.get(8), 3))
+    then
+        $line.addError("IFD004", "field", "Stock Exchange", "specifiedValue", "Char(3)");
+end
+
+rule "Collateral Script Check Stock Exchange field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "50"  && fields.size() == 9 && ValidationUtils.containsNonAlphabets(fields.get(8)))
+    then
+        $line.addError("IFD003", "field", "Stock Exchange");
+end

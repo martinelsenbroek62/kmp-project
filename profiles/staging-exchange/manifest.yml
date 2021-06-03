@@ -1,0 +1,19 @@
+applications:
+- name: aiml-service-ui-dev-integration
+  path: ../../target/aiml-service-ui-dev-integration-0.0.1-SNAPSHOT.jar
+#  random-route: true
+  routes:
+  - route: aiml-service-sit-exchange.cfapps.dev2.parivartan.nseroot.com
+  #  memory: 500M
+  #disk_quota: 500M
+  instances: 1
+  env:
+    #JAVA_OPTS: '-XX:MaxMetaspaceSize=80780K -Xss512k -Xmx200M -XX:ReservedCodeCacheSize=16M -XX:MaxDirectMemorySize=16M'
+    JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 11.+ } }'
+    EUREKA_SERVER: 'https://service-registry-sit-exchange.cfapps.dev2.parivartan.nseroot.com/eureka/'
+    KAFKA_ADDR: '172.17.235.50:9092'
+    ORACLE_URL: 'jdbc:oracle:thin:@172.17.234.152:1521:SITDB'
+    ORACLE_USERNAME: mem_comp
+    ORACLE_PASSWORD: memcom123
+    PROFILE: 'sit-exchange'
+

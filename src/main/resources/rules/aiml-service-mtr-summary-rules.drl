@@ -1,0 +1,106 @@
+package com.nseindia.common.drools.service;
+
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import com.nseindia.mc.controller.dto.LineValidationResult;
+import com.nseindia.mc.controller.dto.ErrorCode;
+import com.nseindia.mc.controller.dto.DroolsEnv;
+import com.nseindia.mc.util.ValidationUtils;
+
+global DroolsEnv env;
+
+dialect  "mvel"
+
+rule "Summary Check Length"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() != 4)
+    then
+        $line.addError("FS011");
+end
+
+
+rule "Summary Check Record Type"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() > 0 && fields.get(0) != "30")
+    then
+        $line.addError("IFD013");
+end
+
+rule "Summary Check File Type"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.get(0) == "30"  && fields.size() > 2 && fields.get(2) not in ("01", "02", "03", "04", "05"))
+    then
+        $line.addError("IFD014", "lenderCategory", $line.getFields().get(2));
+end
+
+rule "Summary Check Record Type is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isNullOrEmpty(fields.get(0)))
+    then
+        $line.addError("IFD001", "field", "Record Type");
+end
+
+rule "Summary Check Lender name is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isNullOrEmpty(fields.get(1)))
+    then
+        $line.addError("IFD001", "field", "Lender name");
+end
+
+rule "Summary Check Lender name field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isOutsideLimits(fields.get(1), 30))
+    then
+        $line.addError("IFD004", "field", "Lender name", "specifiedValue", "Char(30)");
+end
+
+rule "Summary Check Lender name field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.containsNonAlphabets(fields.get(1)))
+    then
+        $line.addError("IFD003", "field", "Lender name");
+end
+
+rule "Summary Check Lender Category is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isNullOrEmpty(fields.get(2)))
+    then
+        $line.addError("IFD001", "field", "Lender Category");
+end
+
+rule "Summary Check Lender Category field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isNotBatchNumber(fields.get(2)))
+    then
+        $line.addError("IFD004", "field", "Lender Category", "specifiedValue", "Number(2)");
+end
+
+rule "Summary Check Lender Category is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isNotValidNumber(fields.get(2)))
+    then
+        $line.addError("IFD002", "field", "Lender Category");
+end
+
+rule "Summary Check Amount Funded is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isNullOrEmpty(fields.get(3)))
+    then
+        $line.addError("IFD001", "field", "Amount Funded");
+end
+
+rule "Summary Check Amount Funded is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isNotValidNumber(fields.get(3)))
+    then
+        $line.addError("IFD002", "field", "Amount Funded");
+end
+
+rule "Summary Check Amount Funded field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "30" &&  fields.size() == 4 && ValidationUtils.isNotAmount(fields.get(3)))
+    then
+        $line.addError("IFD004", "field", "Amount Funded", "specifiedValue", "Number(15,2)");
+end
+

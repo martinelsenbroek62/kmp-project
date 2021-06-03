@@ -1,0 +1,13 @@
+SEBI REPORT AS ON Reporting date %s,,,
+Please note the figures are provisional as few members have not submitted the data,,,
+,,,
+Sr.No.,Particulars,Rs. In Lakhs ,
+1,Scripwise Total Outstanding on the beginning of the day,%s,
+2,Fresh Exposure taken during the day,%s,
+3,Exposure liquidated during the day,%s,
+4,Net scripwise outstanding at the end of the day,%s,
+,,,
+,,,
+Symbol,Name,Qty Fin by all the members(No.of Shares),Amt Fin by all the members(Rs. In Lakhs)
+,,,
+ * Figures are rounded to the nearest decimal. ,,,

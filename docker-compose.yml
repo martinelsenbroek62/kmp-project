@@ -1,0 +1,25 @@
+version: '3'
+services:
+  aiml-service:
+    image: aiml-service:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@db:1521:XE
+    ports:
+      - "8080:8080"
+  db:
+    image: oracle/database:18.4.0-xe
+    build:
+      context: ./docker-db
+      dockerfile: Dockerfile.xe
+    container_name: aiml-service-db
+    environment:
+      - ORACLE_PWD=mysecurepassword
+      - ORACLE_CHARACTERSET=AL32UTF8
+    ports:
+      - "51521:1521"

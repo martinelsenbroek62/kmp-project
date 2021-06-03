@@ -1,0 +1,225 @@
+eureka:
+  instance:
+    hostname: '${vcap.application.uris[0]:localhost:${server.port}}'
+    nonSecurePortEnabled: false
+    securePortEnabled: true
+    securePort: 443
+    statusPageUrl: https://${eureka.hostname}${server.servlet.context-path}/actuator/info
+    homePageUrl: https://${eureka.hostname}${server.servlet.context-path}/
+  client:
+    serviceUrl:
+      defaultZone: '${EUREKA_SERVER:https://service-registry.apps.dev1.nseparivartan.com/eureka/}'
+server:
+  port: 8080
+  servlet:
+    context-path: /mcora
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: INFO
+        stat: INFO
+spring:
+  datasource:
+    driver-class-name: oracle.jdbc.driver.OracleDriver
+    type: com.zaxxer.hikari.HikariDataSource
+    url: jdbc:oracle:thin:@15.207.177.68:1521:PRVTNDB
+    username: mem_com
+    password: mem_com
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.Oracle12cDialect
+        generate_statistics: false
+        order_inserts: true
+        jdbc:
+          batch_size: 1000
+    hikari:
+      poolName: Hikari
+      auto-commit: false
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+        
+  kafka:
+    bootstrap-servers: 10.81.63.37:9092
+  #  h2:
+  #    console:
+  #      enabled: true
+  #      path: /h2
+  #      settings:
+  #        web-allow-others: true
+  application:
+    name: aiml-service
+    cloud:
+      config:
+        name: ${spring.application.name}, error-message, static-config, ap-config, status
+        discovery:
+          enabled: true
+          service-id: config-server
+        fail-fast: true
+    profiles:
+      active: development
+  #  jpa:
+  #    database-platform: org.hibernate.dialect.H2Dialect
+  #    properties:
+  #      hibernate:
+  #        format_sql: true
+#  mail:
+#    host: smtp.ethereal.email
+#    password: yJZbsuaGcxtYPzb9Rq
+#    port: 587
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          starttls:
+#            enable: true
+#            required: true
+#    protocol: smtp
+#    username: abdiel.monahan@ethereal.email
+
+email:
+  ibes:
+    mail:
+      body: 'report email'
+      from: noreply@xoxocosmetic.com
+      subject: 'Quarter Report %s'
+      to: sridevi.sundaresan@wipro.com
+      file-extension: '_report.xlsx'
+  data-submission:
+    mail:
+      body: Dear Sir/Madam,<br/><br/>Your system data submission for the %s has been submitted successfully<br/><br/>
+              Member Compliance Department<br/>This is a system generated email, do not reply to this email id.<br/><br/>Warm Regards,<br/>Member Compliance Department<br/><br/>**Disclaimer - This is a system generated email, do not reply to this email id. **
+      from: noreply@xoxocosmetic.com
+      subject: 'Submission for AI & ML reporting for quarter ended %s'
+  nil-submission:
+    mail:
+      body: Dear Sir/Madam,<br/><br/>Your NIL submission for the %s has been submitted successfully.<br/><br/>
+              Member Compliance Department<br>This is a system generated email, do not reply to this email id.<br/><br/>Warm Regards,<br/>Member Compliance Department<br/><br/>**Disclaimer - This is a system generated email, do not reply to this email id. **
+      from: noreply@xoxocosmetic.com
+      subject: 'Submission for AI & ML reporting for quarter ended %s'
+  first-business-day:
+    mail:
+      body: Dear Sir/Madam,<br/><br/>This has reference to Exchange circulars NSE/COMP/40174 dated February 07, and <the new circular for the quarter>  w.r.t. submission of data towards AI and ML applications and systems offered and used by market intermediaries and related circulars issued from time to time.<br/><br/>The link for AI and ML submission is activated for _____ (qtr and year) ,you are hereby advised to submit the data towards the AI and ML applications/systems for the quarter ended __________by 15th of this month.The link can be accessed by logging into (Parivartan link to be provided)<br/><br/>Warm Regards,<br/>Member Compliance Department<br/><br/>**Disclaimer - This is a system generated email, do not reply to this email id. **
+      from: noreply@xoxocosmetic.com
+      subject: 'Submission for AI & ML reporting for quarter ended %s' 
+  first-business-day-nil:
+    mail:
+      body: Dear Sir/Madam,<br/><br/>This has reference to Exchange circulars NSE/COMP/40174 dated February 07, and <the new circular for the quarter>  w.r.t. submission of data towards AI and ML applications and systems offered and used by market intermediaries and related circulars issued from time to time.<br/><br/>As declared by you in the previous quarter, it is noted that you are currently not using or offering any AI and ML applications or systems. Accordingly, no data is being submitted by you to the Exchange. Kindly ensure to submit the data to the Exchange as soon as you become eligible as per the said Exchange circulars. Till such time , the declaration submitted shall be carried forward for all forthcoming quarters.<br/><br/>Warm Regards,<br/>Member Compliance Department<br/><br/>**Disclaimer - This is a system generated email, do not reply to this email id. **
+      from: noreply@xoxocosmetic.com
+      subject: 'Submission for AI & ML reporting for quarter ended %s'
+  seventh-business-day:
+    mail:
+      body: Dear Sir/Madam,<br/><br/>This has reference to Exchange circulars NSE/COMP/40174 dated February 07, and <the new circular for the quarter>  w.r.t. submission of data towards AI and ML applications and systems offered and used by market intermediaries and related circulars issued from time to time.<br/><br/>You have not submitted the AI and ML submission for the quarter <current quarter's period to be inserted>. The last date for submission is 15th of this month. You are requested to submit the same before the due date.<br/><br/>Warm Regards,<br/>Member Compliance Department<br/><br/>**Disclaimer - This is a system generated email, do not reply to this email id. **
+      from: noreply@xoxocosmetic.com
+      subject: 'Submission for AI & ML reporting for quarter ended %s' 
+  fifteenth-business-day:
+    mail:
+      body: Dear Sir/Madam,<br/><br/>This has reference to Exchange circulars NSE/COMP/40174 dated February 07, and <the new circular for the quarter>  w.r.t. submission of data towards AI and ML applications and systems offered and used by market intermediaries and related circulars issued from time to time.<br/><br/>You have not submitted the AI and ML submission for the quarter< quarter's period to be inserted>. The last date for submission is today. You are requested to submit the same by EOD today, failing which no submission can be done by you after the link is closed. Any physical submissions or submissions through email will not be considered.<br/><br/>Warm Regards,<br/>Member Compliance Department<br/><br/>**Disclaimer - This is a system generated email, do not reply to this email id. **
+      from: noreply@xoxocosmetic.com
+      subject: 'Submission for AI & ML reporting for quarter ended %s'
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 1600000
+        readTimeout: 1600000
+
+notification:
+  url: 'http://15.207.122.114/'
+  intermediate-report: true
+  invocation-type: 'SYNC'
+  func-or-service-id: '11111'
+  func-or-service-name: 'AAAAA'
+  bulk-id: 'customBulkId'
+  template-id: 0
+  reply-to: 'all.replies@somedomain.com'
+
+upload:
+  cutoff:
+    start: 9:00 AM
+    end: 10:00 PM
+    startHour: 7
+
+cronJob:
+  signOffDailyJob:
+    startHour: 22
+    startMinute: 30
+
+dms:
+  response:
+    path: test_files
+
+tasks:
+  type: MTR Submission
+  cutoff-open:
+    nil-mail:
+      body: Your NIL submission is being carried forward for the trade date %s, in case there is any change in the reporting, kindly submit the details on the portal by %s
+      from: noreply@xoxocosmetic.com
+      subject: NIL reporting of Daily Margin Trading for the trade date %s
+    data-mail:
+      body: Please ensure to submit the Daily Margin Trading file by %s
+      from: noreply@xoxocosmetic.com
+      subject: Reporting of Daily Margin Trading file for the trade date %s
+  first-business-day:
+    mail:
+      body: The Penalty cycle for %s has started however the HO Maker for MTR penalty has not yet been assigned. Kindly complete the assignment from the MTR Daily Dashboard
+      from: noreply@xoxocosmetic.com
+      subject: HO Maker Penalty not assigned
+      to: waghmare.gangadharrao@wipro.com
+      #to: ibes_mail@nse.co.in
+  signoff:
+    mail:
+      body: The process of MTR sign of for the trade date %s is completed
+      from: noreply@xoxocosmetic.com
+      subject: MTR sign off
+      to: waghmare.gangadharrao@wipro.com
+      #to: dl-comp-mem@nse.co.in
+
+  publish-mrg-report:
+    mail:
+      body: The MTR file is transferred to website at %s
+      from: noreply@xoxocosmetic.com
+      subject: Transfer of MTR file to website
+      to: waghmare.gangadharrao@wipro.com
+      #to: dl-comp-mem@nse.co.in
+
+penalty:
+  amountRateCard:
+    oneInstance: 1000
+    twoToFiveInstances: 2000
+  scheduledTime:
+    hour: 11
+  tollFreePhoneNumber: 1800-266-0050
+  mail:
+    penalty-letter:
+      body: Dear Sir/Madam,<br/>Charges for non-reporting of Daily Margin Trading file for the month of %s
+        <br/><br/>Member Compliance Department<br/>This
+        is a system generated email, do not reply to this email id.
+      from: noreply@xoxocosmetic.com
+      subject: Charges for non-reporting of Daily Margin Trading file for the month of %s
+    penalty-reversal-letter:
+      body: Dear Sir/Madam,<br/>Please find enclosed herewith the letter for reversal of charges levied for non-reporting of Daily Margin Trading file for the month of %s
+        <br/><br/>Member Compliance Department<br/>This
+        is a system generated email, do not reply to this email id.
+      from: noreply@xoxocosmetic.com
+      subject: Reversal of the mcharges for non-reporting of Daily Margin Trading file for the month of %s
+
+kmp:
+  config:
+    guidelines: The Key Management Personnel Guidelines
+    corporateBankExistingRoleInfoTip: Please select the current role of the KMP. If KMP has multiple roles (eg director & shareholder), you can select either of them
+    llpPartnershipIndividualInfoTip: Please select the current role of the KMP
+    nameOfKmpInfoTip: Please select the individual who you want to assign as KMP
+    dateOfDeclarationInfoTip: Please specifiy on what date was the individual declared as a KMP
+    additionalDesignationInfoTip: Specify additional designation, if any
+    mobileNumberInfoTip: An intimation will be sent to this Mobile number post verification by member
+    emailIdInfoTip: Please provide valid Email ID of the KMP
+    exchangeText: The KMP exchange Text
+

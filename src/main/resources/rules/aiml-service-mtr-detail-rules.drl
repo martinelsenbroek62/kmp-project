@@ -1,0 +1,399 @@
+package com.nseindia.common.drools.service;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.regex.Pattern;
+import com.nseindia.mc.controller.dto.LineValidationResult;
+import com.nseindia.mc.controller.dto.DroolsEnv;
+import com.nseindia.mc.util.ValidationUtils;
+import com.nseindia.mc.util.CommonUtils;
+import com.nseindia.mc.service.mtrReport.MtrFileValidateService;
+import com.nseindia.mc.controller.dto.MTRDetailRecordDtoInterface;
+import java.time.LocalDate;
+
+global DroolsEnv env;
+
+dialect  "mvel"
+
+rule "Detail Check Length"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" && fields.size() != 15)
+    then
+        $line.addError("FS012");
+end
+
+rule "Detail Check Record Type"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 0 && fields.get(0) != "20")
+    then
+        $line.addError("IFD016");
+end
+
+rule "Detail Check PAN Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 2 && Pattern.matches("[A-Z]{3}[ABCFGHLJPTF]{1}[A-Z]{1}[0-9]{4}[A-Z]{1}", fields.get(2)) != true)
+    then
+        $line.addError("IFD017");
+end
+
+rule "Detail Check Series"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 4 && fields.get(4) != "EQ")
+    then
+        $line.addError("IFD019");
+end
+
+rule "Detail Check Category"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 13 && fields.get(13) not in ("Y", "N"))
+    then
+        $line.addError("IFD021");
+end
+
+rule "Detail Check Stock Exchange"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 14 && fields.get(14) != "NSE")
+    then
+        $line.addError("IFD022");
+end
+
+rule "Detail Check Quantity Begin"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 5 && ValidationUtils.isDouble(fields.get(5)) && !ValidationUtils.isSame(fields.get(5), MtrFileValidateService.getPreviousDayEndQuantity(fields, env.getRecords())))
+    then
+        $line.addError("PD001", "previousDate", CommonUtils.getNumberedDateStr(env.getPreviousDate()), "quantityBegin", MtrFileValidateService.getPreviousDayEndQuantity($line.getFields(), env.getRecords()), "currentDate", CommonUtils.getNumberedDateStr(env.getCurrentDate()), "openingQtyInFileContent", $line.getFields().get(5));
+end
+
+rule "Detail Check Amount Begin"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 6 && ValidationUtils.isDouble(fields.get(6)) && !ValidationUtils.isSame(fields.get(6), MtrFileValidateService.getPreviousDayEndAmount(fields, env.getRecords())))
+    then
+        $line.addError("PD002", "previousDate", CommonUtils.getNumberedDateStr(env.getPreviousDate()), "amountBegin", ValidationUtils.getDoubleString(MtrFileValidateService.getPreviousDayEndAmount($line.getFields(), env.getRecords())), "currentDate", CommonUtils.getNumberedDateStr(env.getCurrentDate()), "openingAmountInFileContent", ValidationUtils.getDoubleString($line.getFields().get(6)));
+end
+
+rule "Detail Check Quantity Liquidated"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 9 && ValidationUtils.isDouble(fields.get(9)) && ValidationUtils.isDouble(fields.get(5)) && ValidationUtils.isDouble(fields.get(7)) && ValidationUtils.getInteger(fields.get(9)) > ValidationUtils.sumOfInteger(fields.get(5), fields.get(7)))
+    then
+        $line.addError("PD003", "liquidatedQtyInFileContent", $line.getFields().get(9), "daySum", ValidationUtils.sumOfInteger($line.getFields().get(7), $line.getFields().get(5)));
+end
+
+rule "Detail Check Amount Liquidated"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 10 && ValidationUtils.isDouble(fields.get(10)) && ValidationUtils.isDouble(fields.get(6)) && ValidationUtils.isDouble(fields.get(8)) && ValidationUtils.getDouble(fields.get(10)) > ValidationUtils.sumOfDouble(fields.get(6), fields.get(8)) + 10e-5)
+    then
+        $line.addError("PD004", "liquidatedAmtInFileContent", ValidationUtils.getDoubleString($line.getFields().get(10)), "daySum", ValidationUtils.getDoubleString(ValidationUtils.sumOfDouble($line.getFields().get(8), $line.getFields().get(6))));
+end
+
+rule "Detail Check Quantity End"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 11 && ValidationUtils.isInteger(fields.get(5)) && ValidationUtils.isInteger(fields.get(7)) && ValidationUtils.isInteger(fields.get(9)) && ValidationUtils.isInteger(fields.get(11)) && !ValidationUtils.isSame(ValidationUtils.sumOfInteger(fields.get(5), fields.get(7)), ValidationUtils.sumOfInteger(fields.get(9), fields.get(11))))
+    then
+        $line.addError("PD005", "qtyEndDayInFileContent", $line.getFields().get(11),  "daySum", (ValidationUtils.sumOfInteger($line.getFields().get(5), $line.getFields().get(7)) - ValidationUtils.getInteger($line.getFields().get(9))));
+end
+
+
+rule "Detail Check Amount End"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() > 12 && ValidationUtils.isDouble(fields.get(6)) && ValidationUtils.isDouble(fields.get(8)) && ValidationUtils.isDouble(fields.get(10)) && ValidationUtils.isDouble(fields.get(12)) && !ValidationUtils.isSame(ValidationUtils.sumOfDouble(fields.get(6), fields.get(8)), ValidationUtils.sumOfDouble(fields.get(10), fields.get(12))))
+    then
+        $line.addError("PD006", "amountEndDayInFileContent", ValidationUtils.getDoubleString($line.getFields().get(12)),  "daySum", ValidationUtils.getDoubleString(ValidationUtils.sumOfDouble($line.getFields().get(6), $line.getFields().get(8)) - ValidationUtils.getDouble($line.getFields().get(10))));
+end
+
+
+rule "Detail Check Record Type is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(0)))
+    then
+        $line.addError("IFD001", "field", "Record Type");
+end
+
+rule "Detail Check Client Name is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(1)))
+    then
+        $line.addError("IFD001", "field", "Client Name");
+end
+
+rule "Detail Check Client Name field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isOutsideLimits(fields.get(1), 240))
+    then
+        $line.addError("IFD004", "field", "Client Name", "specifiedValue", "Char(240)");
+end
+
+rule "Detail Check PAN is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(2)))
+    then
+        $line.addError("IFD001", "field", "PAN");
+end
+
+rule "Detail Check PAN field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isOutsideLimits(fields.get(2), 240))
+    then
+        $line.addError("IFD004", "field", "PAN", "specifiedValue", "Char(240)");
+end
+
+rule "Detail Check PAN field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.containsNonAlphabets(fields.get(2)))
+    then
+        $line.addError("IFD003", "field", "PAN");
+end
+
+rule "Detail Check Symbol is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(3)))
+    then
+        $line.addError("IFD001", "field", "Symbol");
+end
+
+rule "Detail Check Symbol field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isOutsideLimits(fields.get(3), 10))
+    then
+        $line.addError("IFD004", "field", "Symbol", "specifiedValue", "Char(10)");
+end
+
+rule "Detail Check Symbol code is valid"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isSetNotContains(env.getValidSymbolCodes(), fields.get(3)))
+    then
+        $line.addError("IFD026", "field", "Symbol");
+end
+
+rule "Detail Check Series is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(4)))
+    then
+        $line.addError("IFD001", "field", "Series");
+end
+
+rule "Detail Check Series field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isOutsideLimits(fields.get(4), 2))
+    then
+        $line.addError("IFD004", "field", "Series", "specifiedValue", "Char(2)");
+end
+
+rule "Detail Check Series field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.containsNonAlphabets(fields.get(4)))
+    then
+        $line.addError("IFD003", "field", "Series");
+end
+
+rule "Detail Check Funded Quantity begin day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(5)))
+    then
+        $line.addError("IFD001", "field", "Funded Quantity begin day");
+end
+
+rule "Detail Check Funded Quantity begin day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotValidNumber(fields.get(5)))
+    then
+        $line.addError("IFD002", "field", "Funded Quantity begin day");
+end
+
+rule "Detail Check Funded Quantity begin day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotQuantity(fields.get(5)))
+    then
+        $line.addError("IFD004", "field", "Funded Quantity begin day", "specifiedValue", "Number(9)");
+end
+
+rule "Detail Check Funded Amount begin day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(6)))
+    then
+        $line.addError("IFD001", "field", "Funded Amount begin day");
+end
+
+rule "Detail Check Funded Amount begin day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotValidNumber(fields.get(6)))
+    then
+        $line.addError("IFD002", "field", "Funded Amount begin day");
+end
+
+rule "Detail Check Funded Amount begin day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotAmount(fields.get(6)))
+    then
+        $line.addError("IFD004", "field", "Funded Amount begin day", "specifiedValue", "Number(15,2)");
+end
+
+rule "Detail Check Fresh Quantity During Day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(7)))
+    then
+        $line.addError("IFD001", "field", "Fresh Quantity During Day");
+end
+
+rule "Detail Check Fresh Quantity During Day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotValidNumber(fields.get(7)))
+    then
+        $line.addError("IFD002", "field", "Fresh Quantity During Day");
+end
+
+rule "Detail Check Fresh Quantity During Day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotQuantity(fields.get(7)))
+    then
+        $line.addError("IFD004", "field", "Check Fresh Quantity During Day", "specifiedValue", "Number(9)");
+end
+
+rule "Detail Check Funded Amount during day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(8)))
+    then
+        $line.addError("IFD001", "field", "Funded Amount during day");
+end
+
+rule "Detail Check Funded Amount during day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotValidNumber(fields.get(8)))
+    then
+        $line.addError("IFD002", "field", "Funded Amount during day");
+end
+
+rule "Detail Check Funded Amount during day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotAmount(fields.get(8)))
+    then
+        $line.addError("IFD004", "field", "Funded Amount during day", "specifiedValue", "Number(15,2)");
+end
+
+rule "Detail Check Funded Quantity liquidated during day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(9)))
+    then
+        $line.addError("IFD001", "field", "Funded Quantity liquidated during day");
+end
+
+rule "Detail Check Funded Quantity liquidated during day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotValidNumber(fields.get(9)))
+    then
+        $line.addError("IFD002", "field", "Funded Quantity liquidated during day");
+end
+
+rule "Detail Check Funded Quantity liquidated during day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotQuantity(fields.get(9)))
+    then
+        $line.addError("IFD004", "field", "Check Funded Quantity liquidated during day", "specifiedValue", "Number(9)");
+end
+
+rule "Detail Check Funded Amount liquidated during day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(10)))
+    then
+        $line.addError("IFD001", "field", "Funded Amount liquidated during day");
+end
+
+rule "Detail Check Funded Amount liquidated during day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotValidNumber(fields.get(10)))
+    then
+        $line.addError("IFD002", "field", "Funded Amount liquidated during day");
+end
+
+rule "Detail Check Funded Amount liquidated during day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotAmount(fields.get(10)))
+    then
+        $line.addError("IFD004", "field", "Funded Amount liquidated during day", "specifiedValue", "Number(15,2)");
+end
+
+rule "Detail Check Funded Quantity end day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(11)))
+    then
+        $line.addError("IFD001", "field", "Funded Quantity end day");
+end
+
+rule "Detail Check Funded Quantity end day during day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotValidNumber(fields.get(11)))
+    then
+        $line.addError("IFD002", "field", "Funded Quantity end day");
+end
+
+rule "Detail Check Funded Quantity end day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotQuantity(fields.get(11)))
+    then
+        $line.addError("IFD004", "field", "Check Funded Quantity end day", "specifiedValue", "Number(9)");
+end
+
+rule "Detail Check Funded Amount end day is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(12)))
+    then
+        $line.addError("IFD001", "field", "Funded Amount end day");
+end
+
+rule "Detail Check Funded Amount end day is a valid number"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotValidNumber(fields.get(12)))
+    then
+        $line.addError("IFD002", "field", "Funded Amount end day");
+end
+
+rule "Detail Check Funded Amount end day field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNotAmount(fields.get(12)))
+    then
+        $line.addError("IFD004", "field", "Funded Amount end day", "specifiedValue", "Number(15,2)");
+end
+
+rule "Detail Check Category of Holding is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(13)))
+    then
+        $line.addError("IFD001", "field", "Category of Holding");
+end
+
+rule "Detail Check Category of Holding field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isOutsideLimits(fields.get(13), 2))
+    then
+        $line.addError("IFD004", "field", "Category of Holding", "specifiedValue", "Char(2)");
+end
+
+rule "Detail Check Category of Holding field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.containsNonAlphabets(fields.get(13)))
+    then
+        $line.addError("IFD003", "field", "Category of Holding");
+end
+
+rule "Detail Check Stock Exchange is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isNullOrEmpty(fields.get(14)))
+    then
+        $line.addError("IFD001", "field", "Stock Exchange");
+end
+
+rule "Detail Check Stock Exchange field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.isOutsideLimits(fields.get(14), 3))
+    then
+        $line.addError("IFD004", "field", "Stock Exchange", "specifiedValue", "Char(3)");
+end
+
+rule "Detail Check Stock Exchange field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "20" &&  fields.size() == 15 && ValidationUtils.containsNonAlphabets(fields.get(14)))
+    then
+        $line.addError("IFD003", "field", "Stock Exchange");
+end

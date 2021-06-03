@@ -1,0 +1,113 @@
+package com.nseindia.common.drools.service;
+
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.regex.Pattern;
+
+import com.nseindia.mc.controller.dto.LineValidationResult;
+import com.nseindia.mc.controller.dto.ErrorCode;
+import com.nseindia.mc.controller.dto.DroolsEnv;
+import com.nseindia.mc.util.ValidationUtils;
+
+global DroolsEnv env;
+
+dialect  "mvel"
+
+rule "Collateral Check Length"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() != 4)
+    then
+        $line.addError("FS014");
+end
+
+rule "Collateral Check Record Type"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() > 0 && fields.get(0) != "40")
+    then
+        $line.addError("IFD005");
+end
+
+rule "Collateral Check Script Amount"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() > 3 && !ValidationUtils.isSame(fields.get(3), env.getScriptAmount()))
+    then
+        $line.addError("IFD023", "collateralAmount", ValidationUtils.getDoubleString($line.getFields().get(3)), "detailsAmount", ValidationUtils.getDoubleString(env.getScriptAmount()));
+end
+
+rule "Collateral Check Record Type is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNullOrEmpty(fields.get(0)))
+    then
+        $line.addError("IFD001", "field", "Record Type");
+end
+
+rule "Collateral Check Record Type is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNotValidNumber(fields.get(0)))
+    then
+        $line.addError("IFD002", "field", "Record Type");
+end
+
+rule "Collateral Check Collateral-Cash is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNullOrEmpty(fields.get(1)))
+    then
+        $line.addError("IFD001", "field", "Collateral-Cash");
+end
+
+rule "Collateral Check Collateral-Cash is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNotValidNumber(fields.get(1)))
+    then
+        $line.addError("IFD002", "field", "Collateral-Cash");
+end
+
+rule "Collateral Check Collateral-Cash field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNotAmount(fields.get(1)))
+    then
+        $line.addError("IFD004", "field", "Collateral-Cash", "specifiedValue", "Number(15,2)");
+end
+
+rule "Collateral Check Collateral-Cash Equivalent is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNullOrEmpty(fields.get(2)))
+    then
+        $line.addError("IFD001", "field", "Collateral-Cash Equivalent");
+end
+
+rule "Collateral Check Collateral-Cash Equivalent is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNotValidNumber(fields.get(2)))
+    then
+        $line.addError("IFD002", "field", "Collateral-Cash Equivalent");
+end
+
+rule "Collateral Check Collateral-Cash Equivalent field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNotAmount(fields.get(2)))
+    then
+        $line.addError("IFD004", "field", "Collateral-Cash Equivalent", "specifiedValue", "Number(15,2)");
+end
+
+rule "Collateral Check Collateral-Scrips is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNullOrEmpty(fields.get(3)))
+    then
+        $line.addError("IFD001", "field", "Collateral-Scrips");
+end
+
+rule "Collateral Check Collateral-Scrips is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNotValidNumber(fields.get(3)))
+    then
+        $line.addError("IFD002", "field", "Collateral-Scrips");
+end
+
+rule "Collateral Check Collateral-Scrips field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "40"  && fields.size() == 4 && ValidationUtils.isNotAmount(fields.get(3)))
+    then
+        $line.addError("IFD004", "field", "Collateral-Scrips", "specifiedValue", "Number(15,2)");
+end

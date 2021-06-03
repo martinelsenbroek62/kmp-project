@@ -1,0 +1,223 @@
+package com.nseindia.common.drools.service;
+
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import com.nseindia.mc.controller.dto.LineValidationResult;
+import com.nseindia.mc.controller.dto.DroolsEnv;
+import com.nseindia.mc.util.ValidationUtils;
+
+global DroolsEnv env;
+
+dialect  "mvel"
+
+rule "Control Check Length"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() != 8)
+    then
+        $line.addError("FS010");
+end
+
+rule "Control Check Record Type"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() > 0 && fields.get(0) != "10")
+    then
+        $line.addError("IFD005");
+end
+
+
+rule "Control Check File Type"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() > 1 && fields.get(1).toUpperCase() != "MTR")
+    then
+        $line.addError("IFD006");
+end
+
+rule "Control Check Member Code"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() > 2 && fields.get(2)  != env.getMemberCode())
+    then
+        $line.addError("IFD007", "memberCodeInFileName", env.getMemberCode(), "memberCodeInFileContent", $line.getFields().get(2));
+end
+
+rule "Control Check Batch Date"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() > 3 && fields.get(3)  != env.getBatchDate())
+    then
+        $line.addError("IFD008", "batchDateInFileName", env.getBatchDate(), "batchDateInFileContent", $line.getFields().get(3));
+end
+
+rule "Control Check Batch Num"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() > 4 && fields.get(4)  != env.getBatchNum())
+    then
+        $line.addError("IFD009", "batchNumInFileName", env.getBatchNum(), "batchNumInFileContent", $line.getFields().get(4));
+end
+
+rule "Control Check Summary Count"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() > 5 && fields.get(5)  != env.getSummaryCount())
+    then
+        $line.addError("IFD010", "totalSummaryRecordInFileContent", $line.getFields().get(5), "summaryCount", env.getSummaryCount());
+end
+
+rule "Control Check Detail Count"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() > 6 && fields.get(6)  != env.getDetailCount())
+    then
+        $line.addError("IFD011", "totalDetailRecordInFileContent", $line.getFields().get(6), "detailCount" + env.getDetailCount());
+end
+
+rule "Control Check Summary Amount"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() > 7 &&  ValidationUtils.isDouble(fields.get(7)) && fields.get(7)  != env.getSummaryAmount())
+    then
+        $line.addError("IFD012", "totalAmountFundedInFileContent", ValidationUtils.getDoubleString($line.getFields().get(7)), "summaryAmount", ValidationUtils.getDoubleString(env.getSummaryAmount()));
+end
+
+rule "Control Check Record Type is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNullOrEmpty(fields.get(0)))
+    then
+        $line.addError("IFD001", "field", "Record Type");
+end
+
+rule "Control Check Record Type is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotValidNumber(fields.get(0)))
+    then
+        $line.addError("IFD002", "field", "Record Type");
+end
+
+rule "Control Check File Type is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNullOrEmpty(fields.get(1)))
+    then
+        $line.addError("IFD001", "field", "File Type");
+end
+
+rule "Control Check File Type field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.containsNonAlphabets(fields.get(1)))
+    then
+        $line.addError("IFD003", "field", "File Type");
+end
+
+rule "Control Check File Type field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isOutsideLimits(fields.get(1), 3))
+    then
+        $line.addError("IFD004", "field", "File Type", "specifiedValue", "Char(3)");
+end
+
+rule "Control Check Member Code is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNullOrEmpty(fields.get(2)))
+    then
+        $line.addError("IFD001", "field", "Member Code");
+end
+
+rule "Control Check Member Code field has only alphabetical values"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.containsNonAlphabets(fields.get(2)))
+    then
+        $line.addError("IFD003", "field", "Member Code");
+end
+
+rule "Control Check Member Code field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isOutsideLimits(fields.get(2), 5))
+    then
+        $line.addError("IFD004", "field", "Member Code", "specifiedValue", "Char(5)");
+end
+
+rule "Control Check Batch Date is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNullOrEmpty(fields.get(3)))
+    then
+        $line.addError("IFD001", "field", "Batch Date");
+end
+
+rule "Control Check Batch number is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNullOrEmpty(fields.get(4)))
+    then
+        $line.addError("IFD001", "field", "Batch number");
+end
+
+rule "Control Check Batch number field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotBatchNumber(fields.get(4)))
+    then
+        $line.addError("IFD004", "field", "Batch number", "specifiedValue", "Number(2)");
+end
+
+rule "Control Check Batch number is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotValidNumber(fields.get(4)))
+    then
+        $line.addError("IFD002", "field", "Batch number");
+end
+
+rule "Control Check Total summary records is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNullOrEmpty(fields.get(5)))
+    then
+        $line.addError("IFD001", "field", "Total summary records");
+end
+
+rule "Control Check Total summary records is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotValidNumber(fields.get(5)))
+    then
+        $line.addError("IFD002", "field", "Total summary records");
+end
+
+rule "Control Check Total summary records field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotQuantity(fields.get(5)))
+    then
+        $line.addError("IFD004", "field", "Total summary records", "specifiedValue", "Number(9)");
+end
+
+rule "Control Check Total detail records is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNullOrEmpty(fields.get(6)))
+    then
+        $line.addError("IFD001", "field", "Total detail records");
+end
+
+rule "Control Check Total detail records is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotValidNumber(fields.get(6)))
+    then
+        $line.addError("IFD002", "field", "Total detail records");
+end
+
+rule "Control Check Total detail records field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotQuantity(fields.get(6)))
+    then
+        $line.addError("IFD004", "field", "Total detail records", "specifiedValue", "Number(9)");
+end
+
+rule "Control Check Total amount funded is not Empty"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNullOrEmpty(fields.get(7)))
+    then
+        $line.addError("IFD001", "field", "Total amount funded");
+end
+
+rule "Control Check Total amount funded is a Number"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotValidNumber(fields.get(7)))
+    then
+        $line.addError("IFD002", "field", "Total amount funded");
+end
+
+rule "Control Check Total amount funded field length is within limits"
+    when
+        $line: LineValidationResult(fields.get(0) == "10"  && fields.size() == 8 && ValidationUtils.isNotAmount(fields.get(7)))
+    then
+        $line.addError("IFD004", "field", "Total amount funded", "specifiedValue", "Number(15,2)");
+end
